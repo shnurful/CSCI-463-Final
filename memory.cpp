@@ -34,54 +34,35 @@ uint8_t memory::get8(uint32_t addr) const {
 }
 
 uint16_t memory::get16(uint32_t addr) const {
-  uint16_t val = 0x0000;
+  uint16_t low, high;
+  low = get8(addr);
+  high = get8(addr+1);
 
-  val += get8(addr + 1);
-  val <<= 8;
-  val += get8(addr);
-
-  return val;
+  return (high << 8) | low;
 }
 
 uint32_t memory::get32(uint32_t addr) const {
-  uint32_t val = 0x00000000;
+  uint32_t low, high;
+  low = get16(addr);
+  high = get16(addr+2);
 
-  val += get16(addr + 2);
-  val <<= 16;
-  val += get16(addr);
-  
-
-  return val;
+  return (high << 16) | low;
 }
 
 int32_t memory::get8_sx(uint32_t addr) const {
-  int32_t val = 0x00000000;
-  uint8_t num, msb;
-  num = msb = get8(addr);
-  msb >>= 7;
+  int32_t val = get8(addr);
 
-  if (msb == 0x01) {
-    val |= 0xffffff00;
-    val += num;
-  } else {
-    val += num;
-  }
+  val <<= 24;
+  val >>=24;
 
   return val;
 }
 
 int32_t memory::get16_sx(uint32_t addr) const {
-  int32_t val = 0x00000000;
-  uint16_t num, msb;
-  num = msb = get16(addr);
-  msb >>= 15;
+  int32_t val = get16(addr);
 
-  if (msb == 0x01) {
-    val |= 0xffff0000;
-    val += num;
-  } else {
-    val += num;
-  }
+  val <<= 16;
+  val >>=16;
 
   return val;
 }
