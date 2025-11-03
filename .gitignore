@@ -39,3 +39,9 @@
 
 # debug information files
 *.dwo
+hello.in
+hello.run
+memsim
+test2.in
+test3.in
+testsx.in

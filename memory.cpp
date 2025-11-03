@@ -46,9 +46,10 @@ uint16_t memory::get16(uint32_t addr) const {
 uint32_t memory::get32(uint32_t addr) const {
   uint32_t val = 0x00000000;
 
-  val += get16(addr);
-  val <<= 16;
   val += get16(addr + 2);
+  val <<= 16;
+  val += get16(addr);
+  
 
   return val;
 }
@@ -117,19 +118,19 @@ void memory::set32(uint32_t addr, uint32_t val) {
 void memory::dump() const {
   for (uint32_t addr = 0; addr < mem.size(); addr += 16) {
     std::string ascii = "";
-    std::cout << to_hex32(addr) + ":  ";
+    std::cout << to_hex32(addr) + ":";
 
-    for (uint32_t i = 0; i < 15 && (addr + i) < mem.size(); i++) {
+    for (uint32_t i = 0; i < 16 && (addr + i) < mem.size(); i++) {
       if (i == 8)
-        std::cout << "   ";
+        std::cout << " ";
 
-      std::cout << std::right << std::setw(5) << to_hex8(mem[i + addr]);
+      std::cout << std::right << std::setw(3) << to_hex8(mem[i + addr]);
 
       uint8_t ch = get8(i + addr);
       ch = isprint(ch) ? ch : '.';
       ascii.append(1, ch);
     }
-    std::cout << "  " << "*" << ascii << "*" << std::endl;
+    std::cout << " " << "*" << ascii << "*" << std::endl;
   }
 }
 
