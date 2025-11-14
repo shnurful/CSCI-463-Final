@@ -196,11 +196,28 @@ string rv32i_decode::decode(uint32_t addr, uint32_t insn) {
       return render_btype(addr, insn, "bgeu");
     }
     default:
-      render_illegal_insn();
+      return render_illegal_insn();
       assert(0 && "unrecognized funct3");
     }
     assert(0 && "btype fucked");
   }
+    case opcode_stype:{
+      switch(get_funct3(insn)){
+        case funct3_sb:{
+          return render_stype(insn, "sb");
+        }
+        case funct3_sh:{
+          return render_stype(insn, "sh");
+        }
+        case funct3_sw:{
+          return render_stype(insn, "sw");
+        }
+        default:
+          return render_illegal_insn();
+        assert(0 && "unrecognized funct3 stype");
+      }
+      assert(0 && "stype fucked");
+    }
   default: {
     return render_illegal_insn();
   }
@@ -276,6 +293,16 @@ string rv32i_decode::render_itype_load(uint32_t insn, const char *m) {
 
   os << render_mnemonic(m) << render_reg(rd) << ","
      << render_base_disp(r1, (imm_i));
+
+  return os.str();
+}
+string rv32i_decode::render_stype(uint32_t insn, const char *m){
+  ostringstream os;
+  uint32_t r1 = get_rs1(insn);
+  uint32_t r2 = get_rs2(insn);
+  int32_t imm_s = get_imm_s(insn);
+
+  os << render_mnemonic(m) << render_reg(r2) << "," << render_base_disp(r1,imm_s);
 
   return os.str();
 }
@@ -370,8 +397,8 @@ int32_t rv32i_decode::get_imm_u(uint32_t insn) {
 }
 
 int32_t rv32i_decode::get_imm_b(uint32_t insn) {
-  int32_t b = (insn & 0x00000f00) >> (7 - 1);
-  b |= (insn & 0x70000000) >> (25 - 5);
+  int32_t b = (insn & 0x00000f00) >> (8 - 1);
+  b |= (insn & 0x7e000000) >> (25 - 5);
   b |= (insn & 0x00000080) << (11 - 7);
   b |= (insn & 0x80000000) >> (31 - 12);
 
