@@ -94,8 +94,8 @@ protected:
     static std::string render_stype(uint32_t insn, const char *mnemonic);
     static std::string render_itype_alu(uint32_t insn, const char *mnemonic, int32_t imm_i);
     static std::string render_rtype(uint32_t insn, const char *mnemonic);
-    static std::string render_ecall(uint32_t insn);
-    static std::string render_ebreak(uint32_t insn);
+    static std::string render_ecall();
+    static std::string render_ebreak();
     static std::string render_csrrx(uint32_t insn, const char *mnemonic);
     static std::string render_csrrxi(uint32_t insn, const char *mnemonic);
 
