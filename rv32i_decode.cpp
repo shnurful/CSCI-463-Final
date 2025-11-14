@@ -421,7 +421,7 @@ int32_t rv32i_decode::get_imm_s(uint32_t insn) {
 }
 
 int32_t rv32i_decode::get_imm_j(uint32_t insn) {
-  int32_t j = (insn & 0x7FF00000) >> (21 - 1);
+  int32_t j = (insn & 0x7fe00000) >> (21 - 1);
   j |= (insn & 0x00100000) >> (20 - 11);
   j |= (insn & 0x000ff000);
   j |= (insn & 0x80000000) >> (31 - 20);
