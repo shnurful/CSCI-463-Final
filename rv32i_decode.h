@@ -11,16 +11,16 @@ public:
 protected:
     static constexpr int mnemonic_width             = 8;
 
-    static constexpr uint32_t opcode_lui            = 0b0110111;
-    static constexpr uint32_t opcode_auipc          = 0b0010111;
-    static constexpr uint32_t opcode_jal            = 0b1101111;
-    static constexpr uint32_t opcode_jalr           = 0b1100111;
-    static constexpr uint32_t opcode_btype          = 0b1100011;
-    static constexpr uint32_t opcode_load_imm       = 0b0000011;
-    static constexpr uint32_t opcode_stype          = 0b0100011;
-    static constexpr uint32_t opcode_alu_imm        = 0b0010011;
-    static constexpr uint32_t opcode_rtype          = 0b0110011;
-    static constexpr uint32_t opcode_system         = 0b1110011;
+    static constexpr uint32_t opcode_lui            = 0b0110111; //0x37
+    static constexpr uint32_t opcode_auipc          = 0b0010111; //0x17
+    static constexpr uint32_t opcode_jal            = 0b1101111; //0x6f
+    static constexpr uint32_t opcode_jalr           = 0b1100111; //0x67
+    static constexpr uint32_t opcode_btype          = 0b1100011; //0x63
+    static constexpr uint32_t opcode_load_imm       = 0b0000011; //0x03
+    static constexpr uint32_t opcode_stype          = 0b0100011; //0x23
+    static constexpr uint32_t opcode_alu_imm        = 0b0010011; //0x13
+    static constexpr uint32_t opcode_rtype          = 0b0110011; //0x33
+    static constexpr uint32_t opcode_system         = 0b1110011; //0x73
 
     static constexpr uint32_t funct3_beq            = 0b000;
     static constexpr uint32_t funct3_bne            = 0b001;
