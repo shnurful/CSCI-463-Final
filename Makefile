@@ -5,10 +5,10 @@
 # 	I certify that this is my own work and where appropriate an extension
 # 	of the starter code provided for the assignment.
 CXX = g++
-CXXFLAGS = -g -ansi -pedantic -Wall -Werror -Wextra -std=c++14
+CXXFLAGS = -g -ansi -pedantic -Wall -Wextra -std=c++14
 CXXFLAGS += -MMD -MP
 
-TARGET = memsim
+TARGET = rv32i
 SOURCES = $(wildcard *.cpp)
 OBJECTS = $(patsubst %.cpp, %.o, $(SOURCES))
 DEPS = $(patsubst %.cpp, %.d, $(SOURCES))

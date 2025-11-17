@@ -49,3 +49,10 @@ test2.run
 test3-1010.run
 test3-200.run
 testsx.run
+allinsns.bin
+badhex.bin
+master.bin
+reladdr.bin
+allinsns4.bin
+torture.bin
+torture5.bin
