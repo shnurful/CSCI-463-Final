@@ -50,12 +50,24 @@ std::string hex::to_hex0x32(uint32_t i) {
   return std::string("0x") + hex::to_hex32(i);
 }
 
+/**
+ * @brief Converts a 32-bit unsigned integer to a 5-character hex string
+ * prepended with "0x".
+ * @param i The uint32_t value to convert.
+ * @return A 7-character std::string.
+ ********************************************************************************/
 std::string hex::to_hex0x20(uint32_t i) {
   std::ostringstream os;
-  os << "0x" << std::hex << std::setfill('0') << std::setw(5) << i;
+  os << "0x"<< std::hex << std::setfill('0') << std::setw(5) << i;
   return os.str();
 }
 
+/**
+ * @brief Converts a 32-bit unsigned integer to a 3-character hex string
+ * prepended with "0x".
+ * @param i The uint32_t value to convert.
+ * @return A 5-character std::string.
+ ********************************************************************************/
 std::string hex::to_hex0x12(uint32_t i) {
   std::ostringstream os;
   os << "0x" << std::hex << std::setfill('0') << std::setw(3) << i;
