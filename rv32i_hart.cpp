@@ -292,7 +292,7 @@ void rv32i_hart::tick(const string &hdr) {
 
   if (show_regs) {
     regs.dump();
-    std::cout << "\n pc " << to_hex32(pc);
+    std::cout << "\n pc " << to_hex32(pc) << std::endl;
   }
 
   int32_t pc_check = pc % 4;
@@ -306,9 +306,9 @@ void rv32i_hart::tick(const string &hdr) {
   int32_t insn = mem.get32(pc);
 
   if (show_insns) {
-    std::cout << '\n'
-              << hdr << to_hex32(pc) << ": " << to_hex32(insn) << "  ";
+    std::cout << hdr << to_hex32(pc) << ": " << to_hex32(insn) << "  ";
     exec(insn, &std::cout);
+    std::cout << std::endl;
   } else
     exec(insn, nullptr);
 }
@@ -340,7 +340,7 @@ void rv32i_hart::exec_auipc(uint32_t insn, std::ostream *pos) {
     string s = render_auipc(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc) << " + "
-         << to_hex0x32(imm_u);
+         << to_hex0x32(imm_u) << " = " << to_hex0x32(pc + imm_u);
   }
 
   regs.set(rd, (pc + imm_u));
@@ -359,7 +359,7 @@ void rv32i_hart::exec_jal(uint32_t insn, std::ostream *pos) {
          << to_hex0x32(pc + imm_j);
   }
 
-  regs.set(rd, (pc + 0x4));
+  regs.set(rd, (pc + 4));
   pc = pc + imm_j;
 }
 
@@ -367,20 +367,20 @@ void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t r1 = get_rs1(insn);
   uint32_t imm_i = get_imm_i(insn);
-  
+
   uint32_t next_pc = (regs.get(r1) + imm_i) & 0xfffffffe;
 
   if (pos) {
     string s = render_jalr(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
-    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4) << ",  pc = ("
-         << to_hex0x32(imm_i) << " + " << to_hex0x32(regs.get(r1))
-         << ") & " << to_hex0x32(0xfffffffe) << " = "
-         << to_hex0x32(next_pc);
+    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4)
+         << ",  pc = (" << to_hex0x32(imm_i) << " + "
+         << to_hex0x32(regs.get(r1)) << ") & " << to_hex0x32(0xfffffffe)
+         << " = " << to_hex0x32(next_pc);
   }
 
   regs.set(rd, (pc + 4));
-  pc = next_pc; 
+  pc = next_pc;
 }
 
 void rv32i_hart::exec_ebreak(std::ostream *pos) {
@@ -459,6 +459,26 @@ CSR_OP(csrrci)
     pc += 4;                                                                   \
   }
 
+#define R_TYPE_SLT(NAME, OP, TYPE, MNEMONIC, LOG_OP)                           \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    uint32_t rs2 = get_rs2(insn);                                              \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    TYPE val2 = (TYPE)regs.get(rs2);                                           \
+    int32_t result = (val1 OP val2) ? 1 : 0;                                   \
+    if (pos) {                                                                 \
+      std::string s = render_rtype(insn, MNEMONIC);                            \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = (" << to_hex0x32(val1)            \
+           << " " LOG_OP " " << to_hex0x32(val2)                               \
+           << ") ? 1 : 0 = " << to_hex0x32(result);                            \
+    }                                                                          \
+    regs.set(rd, result);                                                      \
+    pc += 4;                                                                   \
+  }
+
 #define R_TYPE_SHIFT(NAME, OP, TYPE, MNEMONIC)                                 \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -485,8 +505,8 @@ R_TYPE_ALU(and, &, int32_t, "and")
 R_TYPE_ALU(or, |, int32_t, "or")
 R_TYPE_ALU(xor, ^, int32_t, "xor")
 
-R_TYPE_ALU(slt, <, int32_t, "slt")
-R_TYPE_ALU(sltu, <, uint32_t, "sltu")
+R_TYPE_SLT(slt, <, int32_t, "slt", "<")
+R_TYPE_SLT(sltu, <, uint32_t, "sltu", "<U")
 
 R_TYPE_SHIFT(sll, <<, uint32_t, "sll")
 R_TYPE_SHIFT(srl, >>, uint32_t, "srl")
@@ -581,9 +601,8 @@ ALU_SHIFT_IMM(srai, >>, int32_t)
       *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
            << s;                                                               \
       *pos << "// " << render_reg(rd) << " = " LOG_OP "(m" << std::dec         \
-           << WIDTH                                                            \
-           << "(" << to_hex0x32(regs.get(rs1)) << " + " << to_hex0x32(imm_i)   \
-           << ")) = " << to_hex0x32(val);                                      \
+           << WIDTH << "(" << to_hex0x32(regs.get(rs1)) << " + "               \
+           << to_hex0x32(imm_i) << ")) = " << to_hex0x32(val);                 \
     }                                                                          \
     regs.set(rd, val);                                                         \
     pc += 4;                                                                   \

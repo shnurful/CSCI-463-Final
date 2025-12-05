@@ -19,8 +19,8 @@ struct opts_list {
   bool show_insn = false;         //show instructions during execution
   uint64_t exec_limit = 0x0;      //max number of instructions to execute
   uint32_t memory_limit = 0x100;  //size of memory
-  bool dump_on_exec = true;       //show regs and pc before each execution
-  bool dump_hart_post = true;     //show regs, pc, and memory after halt
+  bool dump_on_exec = false;       //show regs and pc before each execution
+  bool dump_hart_post = false;     //show regs, pc, and memory after halt
 };
 
 static void usage() {
