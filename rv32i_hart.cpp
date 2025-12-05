@@ -306,14 +306,15 @@ void rv32i_hart::tick(const string &hdr) {
   int32_t insn = mem.get32(pc);
 
   if (show_insns) {
-    std::cout << '\n' << hdr << to_hex32(pc) << ": ";
+    std::cout << '\n'
+              << hdr << to_hex32(pc) << ": " << to_hex0x32(insn) << "  ";
     exec(insn, &std::cout);
   } else
     exec(insn, nullptr);
 }
 void rv32i_hart::dump(const string &hdr) const {
   regs.dump(hdr);
-  std::cout << "\npc " << to_hex32(pc) << '\n';
+  std::cout << "\n pc " << to_hex32(pc) << '\n';
   mem.dump();
 }
 
@@ -324,8 +325,7 @@ void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
   if (pos) {
     string s = render_lui(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
-    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(imm_u) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(4) << ")";
+    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(imm_u);
   }
 
   regs.set(rd, imm_u);
@@ -340,8 +340,7 @@ void rv32i_hart::exec_auipc(uint32_t insn, std::ostream *pos) {
     string s = render_auipc(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc) << " + "
-         << to_hex0x32(imm_u) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(imm_u) << ")";
+         << to_hex0x32(imm_u);
   }
 
   regs.set(rd, (pc + imm_u));
@@ -355,8 +354,9 @@ void rv32i_hart::exec_jal(uint32_t insn, std::ostream *pos) {
   if (pos) {
     string s = render_jal(pc, insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
-    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(imm_j) << ")";
+    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4)
+         << ",  pc = " << to_hex0x32(pc) << " + " << to_hex0x32(imm_j) << " = "
+         << to_hex0x32(pc + imm_j);
   }
 
   regs.set(rd, (pc + 0x4));
@@ -367,18 +367,20 @@ void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t r1 = get_rs1(insn);
   uint32_t imm_i = get_imm_i(insn);
+  
+  uint32_t next_pc = (regs.get(r1) + imm_i) & 0xfffffffe;
 
   if (pos) {
     string s = render_jalr(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
-    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(regs.get(r1))
+    *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4) << ",  pc = ("
+         << to_hex0x32(imm_i) << " + " << to_hex0x32(regs.get(r1))
          << ") & " << to_hex0x32(0xfffffffe) << " = "
-         << to_hex0x32(imm_i + regs.get(r1));
+         << to_hex0x32(next_pc);
   }
 
   regs.set(rd, (pc + 4));
-  pc = regs.get(r1) + imm_i;
+  pc = next_pc; 
 }
 
 void rv32i_hart::exec_ebreak(std::ostream *pos) {

@@ -201,23 +201,23 @@ string rv32i_decode::decode(uint32_t addr, uint32_t insn) {
     }
     assert(0 && "btype fucked");
   }
-    case opcode_stype:{
-      switch(get_funct3(insn)){
-        case funct3_sb:{
-          return render_stype(insn, "sb");
-        }
-        case funct3_sh:{
-          return render_stype(insn, "sh");
-        }
-        case funct3_sw:{
-          return render_stype(insn, "sw");
-        }
-        default:
-          return render_illegal_insn();
-        assert(0 && "unrecognized funct3 stype");
-      }
-      assert(0 && "stype fucked");
+  case opcode_stype: {
+    switch (get_funct3(insn)) {
+    case funct3_sb: {
+      return render_stype(insn, "sb");
     }
+    case funct3_sh: {
+      return render_stype(insn, "sh");
+    }
+    case funct3_sw: {
+      return render_stype(insn, "sw");
+    }
+    default:
+      return render_illegal_insn();
+      assert(0 && "unrecognized funct3 stype");
+    }
+    assert(0 && "stype fucked");
+  }
   default: {
     return render_illegal_insn();
   }
@@ -296,13 +296,14 @@ string rv32i_decode::render_itype_load(uint32_t insn, const char *m) {
 
   return os.str();
 }
-string rv32i_decode::render_stype(uint32_t insn, const char *m){
+string rv32i_decode::render_stype(uint32_t insn, const char *m) {
   ostringstream os;
   uint32_t r1 = get_rs1(insn);
   uint32_t r2 = get_rs2(insn);
   int32_t imm_s = get_imm_s(insn);
 
-  os << render_mnemonic(m) << render_reg(r2) << "," << render_base_disp(r1,imm_s);
+  os << render_mnemonic(m) << render_reg(r2) << ","
+     << render_base_disp(r1, imm_s);
 
   return os.str();
 }
@@ -340,8 +341,8 @@ string rv32i_decode::render_csrrx(uint32_t insn, const char *m) {
   uint32_t r1 = get_rs1(insn);
   int32_t csr = get_imm_i(insn);
 
-  os << render_mnemonic(m) << render_reg(rd) << "," << to_hex0x12(csr) << ","
-     << render_reg(r1);
+  os << render_mnemonic(m) << render_reg(rd) << "," << to_hex0x12(csr & 0xfff)
+     << "," << render_reg(r1);
   return os.str();
 }
 
