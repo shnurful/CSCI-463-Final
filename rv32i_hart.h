@@ -92,7 +92,7 @@ private:
   bool halt = {false};
   std::string halt_reason = {" none "};
 
-  uint64_t insn_counter = {0x0};
+  uint64_t insn_counter = {0};
   uint32_t pc = {0x0};
   uint32_t mhartid = {0x0};
 

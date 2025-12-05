@@ -27,10 +27,16 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
   }
 
   case opcode_system: {
-    if (insn == insn_ecall)
+    if (insn == insn_ecall) {
       exec_ecall(pos);
-    else if (insn == insn_ebreak)
+      return;
+    }
+
+    else if (insn == insn_ebreak) {
       exec_ebreak(pos);
+      return;
+    }
+
     else
       switch (get_funct3(insn)) {
       case funct3_csrrw: {
@@ -305,6 +311,11 @@ void rv32i_hart::tick(const string &hdr) {
   } else
     exec(insn, nullptr);
 }
+void rv32i_hart::dump(const string &hdr) const {
+  regs.dump(hdr);
+  std::cout << "\npc " << to_hex32(pc) << '\n';
+  mem.dump();
+}
 
 void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
@@ -396,8 +407,8 @@ void rv32i_hart::exec_ecall(std::ostream *pos) {
     uint32_t rd = get_rd(insn);                                                \
     int32_t csr_addr = get_imm_i(insn);                                        \
                                                                                \
-        uint32_t old_csr_val = 0;                                              \
-    if ((csr_addr & 0xfff) == 0xf14) {                                                   \
+    uint32_t old_csr_val = 0;                                                  \
+    if ((csr_addr & 0xfff) == 0xf14) {                                         \
       old_csr_val = mhartid;                                                   \
     } else {                                                                   \
       halt = true;                                                             \

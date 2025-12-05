@@ -91,7 +91,6 @@ int main(int argc, char **argv) {
 
   if (opts.dump_dsasmbl) {
     disassemble(mem);
-    mem.dump();
   }
  
   cpu_single_hart cpu(mem);
@@ -100,5 +99,8 @@ int main(int argc, char **argv) {
   
   cpu.run(opts.exec_limit);
 
+  if (opts.dump_hart_post) {
+    cpu.dump();  
+  }
   return 0;
 }
