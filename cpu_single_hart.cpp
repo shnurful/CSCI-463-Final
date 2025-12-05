@@ -1,5 +1,19 @@
 #include "cpu_single_hart.h"
 #include <iostream>
+
+/**
+ * @brief Runs the execution loop for the CPU.
+ *
+ * This method initializes register x2 (Stack Pointer) to the memory size,
+ * effectively setting the stack to grow downwards from the top of memory.
+ * It then enters a loop that calls tick() to execute instructions.
+ * The loop terminates when the hart is halted or when the instruction
+ * counter reaches the specified execution limit (if non-zero).
+ * Finally, it prints the reason for termination and the total instruction count.
+ *
+ * @param exec_limit The limit on the number of instructions to execute.
+ * Passing 0 means no limit.
+ ********************************************************************************/
 void cpu_single_hart::run(uint64_t exec_limit) {
   regs.set(2, mem.get_size());
   if (exec_limit == 0x0) {

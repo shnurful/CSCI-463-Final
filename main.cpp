@@ -5,6 +5,14 @@
     I certify that this is my own work and where appropriate an extension
     of the starter code provided for the assignment.
 */
+/**
+ * @file main.cpp
+ * @brief Main entry point for the RISC-V simulator.
+ *
+ * This file contains the main function which handles command-line argument
+ * parsing, memory initialization, loading the binary file, and starting
+ * the simulation or disassembly process.
+ ********************************************************************************/
 #include "hex.h"
 #include "memory.h"
 #include "rv32i_decode.h"
@@ -14,6 +22,13 @@
 #include <iostream>
 #include <unistd.h>
 
+/**
+ * @struct opts_list
+ * @brief Structure to hold command-line options.
+ *
+ * Stores the configuration settings determined by command-line arguments,
+ * such as memory limits, execution limits, and debug flags.
+ ********************************************************************************/
 struct opts_list {
   bool dump_dsasmbl = false;      //dump memory before execution
   bool show_insn = false;         //show instructions during execution
@@ -23,6 +38,12 @@ struct opts_list {
   bool dump_hart_post = false;     //show regs, pc, and memory after halt
 };
 
+/**
+ * @brief Prints the usage instructions and exits.
+ *
+ * Displays the valid command-line arguments and their descriptions to stderr,
+ * then terminates the program with exit code 1.
+ ********************************************************************************/
 static void usage() {
   std::cerr << "Usage : rv32i [ - d ] [ - i ] [ - r ] [ - z ] [ - l exec - "
                "limit ] [ - m hex - mem - size ] infile\n"
@@ -34,6 +55,15 @@ static void usage() {
             << "\t-z show a dump of the regs & memory after simulation\n";
   exit(1);
 }
+
+/**
+ * @brief Disassembles the instructions in memory.
+ *
+ * Iterates through the memory range and decodes the 32-bit words into
+ * readable RISC-V assembly instructions, printing them to stdout.
+ *
+ * @param mem Reference to the memory object containing the binary code.
+ ********************************************************************************/
 static void disassemble(const memory &mem) {
   // should end up looking like the dump loop, works on 32 bit words
 
@@ -47,6 +77,17 @@ static void disassemble(const memory &mem) {
   return;
 }
 
+/**
+ * @brief Main execution function.
+ *
+ * Parses command-line arguments to configure the simulator. It initializes
+ * memory, loads the input binary file, and optionally disassembles the code
+ * or runs the simulation using the cpu_single_hart class.
+ *
+ * @param argc Argument count.
+ * @param argv Argument values.
+ * @return Returns 0 on success, or exits with 1 on error (via usage()).
+ ********************************************************************************/
 int main(int argc, char **argv) {
   int opt;
   opts_list opts;

@@ -4,6 +4,13 @@
 #include <iomanip>
 #include <iostream>
 
+/**
+ * @brief Decodes and executes a single instruction.
+ *
+ * @param insn The 32-bit instruction to execute.
+ * @param pos Pointer to an ostream for logging instruction execution details.
+ * If nullptr, no logging is performed.
+ ********************************************************************************/
 void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
   switch (get_opcode(insn)) {
   case opcode_lui: {
@@ -279,6 +286,12 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
   assert(0 && "you fucked up. oopsies!");
 }
 
+/**
+ * @brief Handles the execution of an illegal instruction.
+ *
+ * Sets the halt flag and records the reason for halting.
+ * @param pos Pointer to ostream for logging error message.
+ ********************************************************************************/
 void rv32i_hart::exec_illegal_insn(std::ostream *pos) {
   if (pos)
     *pos << render_illegal_insn();
@@ -286,6 +299,13 @@ void rv32i_hart::exec_illegal_insn(std::ostream *pos) {
   halt_reason = "Illegal instruction";
 }
 
+/**
+ * @brief Performs one simulation tick (instruction fetch, decode, execute).
+ *
+ * Checks for halt conditions and PC alignment before fetching.
+ * Updates instruction counter and PC.
+ * @param hdr String prefix for output logging (e.g., address).
+ ********************************************************************************/
 void rv32i_hart::tick(const string &hdr) {
   if (halt == true)
     return;
@@ -312,12 +332,22 @@ void rv32i_hart::tick(const string &hdr) {
   } else
     exec(insn, nullptr);
 }
+
+/**
+ * @brief Dumps the state of the hart registers and memory to stdout.
+ * @param hdr String prefix for the register dump.
+ ********************************************************************************/
 void rv32i_hart::dump(const string &hdr) const {
   regs.dump(hdr);
   std::cout << "\n pc " << to_hex32(pc) << '\n';
   mem.dump();
 }
 
+/**
+ * @brief Executes the LUI (Load Upper Immediate) instruction.
+ * @param insn The instruction to execute.
+ * @param pos Pointer to ostream for logging.
+ ********************************************************************************/
 void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t imm_u = get_imm_u(insn);
@@ -332,6 +362,11 @@ void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
   pc += 4;
 }
 
+/**
+ * @brief Executes the AUIPC (Add Upper Immediate to PC) instruction.
+ * @param insn The instruction to execute.
+ * @param pos Pointer to ostream for logging.
+ ********************************************************************************/
 void rv32i_hart::exec_auipc(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t imm_u = get_imm_u(insn);
@@ -347,6 +382,11 @@ void rv32i_hart::exec_auipc(uint32_t insn, std::ostream *pos) {
   pc += 4;
 }
 
+/**
+ * @brief Executes the JAL (Jump and Link) instruction.
+ * @param insn The instruction to execute.
+ * @param pos Pointer to ostream for logging.
+ ********************************************************************************/
 void rv32i_hart::exec_jal(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   int32_t imm_j = get_imm_j(insn);
@@ -363,6 +403,11 @@ void rv32i_hart::exec_jal(uint32_t insn, std::ostream *pos) {
   pc = pc + imm_j;
 }
 
+/**
+ * @brief Executes the JALR (Jump and Link Register) instruction.
+ * @param insn The instruction to execute.
+ * @param pos Pointer to ostream for logging.
+ ********************************************************************************/
 void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t r1 = get_rs1(insn);
@@ -383,6 +428,10 @@ void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
   pc = next_pc;
 }
 
+/**
+ * @brief Executes the EBREAK (Environment Break) instruction.
+ * @param pos Pointer to ostream for logging.
+ ********************************************************************************/
 void rv32i_hart::exec_ebreak(std::ostream *pos) {
 
   if (pos) {
@@ -393,6 +442,11 @@ void rv32i_hart::exec_ebreak(std::ostream *pos) {
   halt = true;
   halt_reason = "EBREAK instruction";
 }
+
+/**
+ * @brief Executes the ECALL (Environment Call) instruction.
+ * @param pos Pointer to ostream for logging.
+ ********************************************************************************/
 void rv32i_hart::exec_ecall(std::ostream *pos) {
 
   if (pos) {
@@ -404,6 +458,12 @@ void rv32i_hart::exec_ecall(std::ostream *pos) {
   halt_reason = "ECALL instruction";
 }
 
+/**
+ * @brief Macro to define CSR execution functions.
+ *
+ * Generates functions to execute CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI.
+ * Handles the special case for reading the mhartid CSR (0xf14).
+ ********************************************************************************/
 #define CSR_OP(NAME)                                                           \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -440,6 +500,9 @@ CSR_OP(csrrci)
 
 #undef CSR_OP
 
+/**
+ * @brief Macro to define R-type ALU execution functions (ADD, SUB, AND, OR, XOR).
+ ********************************************************************************/
 #define R_TYPE_ALU(NAME, OP, TYPE, MNEMONIC)                                   \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -459,6 +522,9 @@ CSR_OP(csrrci)
     pc += 4;                                                                   \
   }
 
+/**
+ * @brief Macro to define R-type comparison functions (SLT, SLTU).
+ ********************************************************************************/
 #define R_TYPE_SLT(NAME, OP, TYPE, MNEMONIC, LOG_OP)                           \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -479,6 +545,9 @@ CSR_OP(csrrci)
     pc += 4;                                                                   \
   }
 
+/**
+ * @brief Macro to define R-type shift functions (SLL, SRL, SRA).
+ ********************************************************************************/
 #define R_TYPE_SHIFT(NAME, OP, TYPE, MNEMONIC)                                 \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -515,6 +584,9 @@ R_TYPE_SHIFT(sra, >>, int32_t, "sra")
 #undef R_TYPE_ALU
 #undef R_TYPE_SHIFT
 
+/**
+ * @brief Macro to define I-type ALU functions with immediate values (ADDI, ANDI, ORI, XORI).
+ ********************************************************************************/
 #define ALU_IMM(NAME, OP, TYPE)                                                \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -534,6 +606,9 @@ R_TYPE_SHIFT(sra, >>, int32_t, "sra")
     pc += 4;                                                                   \
   }
 
+/**
+ * @brief Macro to define I-type comparison functions with immediates (SLTI, SLTIU).
+ ********************************************************************************/
 #define ALU_SLT_IMM(NAME, OP, TYPE, LOG_OP)                                    \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -554,6 +629,9 @@ R_TYPE_SHIFT(sra, >>, int32_t, "sra")
     pc += 4;                                                                   \
   }
 
+/**
+ * @brief Macro to define I-type shift functions with immediates (SLLI, SRLI, SRAI).
+ ********************************************************************************/
 #define ALU_SHIFT_IMM(NAME, OP, TYPE)                                          \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -589,6 +667,9 @@ ALU_SHIFT_IMM(srai, >>, int32_t)
 #undef ALU_SLT_IMM
 #undef ALU_SHIFT_IMM
 
+/**
+ * @brief Macro to define Load instructions (LB, LH, LW, LBU, LHU).
+ ********************************************************************************/
 #define LOAD_OP(NAME, MEM_FUNC, LOG_OP, WIDTH)                                 \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
@@ -616,6 +697,9 @@ LOAD_OP(lhu, get16, "zx", 16);
 
 #undef LOAD_OP
 
+/**
+ * @brief Macro to define Branch instructions (BEQ, BNE, BLT, BGE, BLTU, BGEU).
+ ********************************************************************************/
 #define B_TYPE_IMPL(NAME, OP, TYPE, MNEMONIC, LOG_OP)                          \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rs1 = get_rs1(insn);                                              \
@@ -646,6 +730,9 @@ B_TYPE_IMPL(bgeu, >=, uint32_t, "bgeu", ">=U")
 
 #undef B_TYPE_IMPL
 
+/**
+ * @brief Macro to define Store instructions (SB, SH, SW).
+ ********************************************************************************/
 #define STORE_OP(NAME, MEM_FUNC, M_TYPE)                                       \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rs1 = get_rs1(insn);                                              \
@@ -668,7 +755,6 @@ B_TYPE_IMPL(bgeu, >=, uint32_t, "bgeu", ">=U")
     pc += 4;                                                                   \
   }
 
-// Generate the functions
 STORE_OP(sb, set8, "m8")
 STORE_OP(sh, set16, "m16")
 STORE_OP(sw, set32, "m32")

@@ -2,21 +2,74 @@
 #include "memory.h"
 #include "registerfile.h"
 #include "rv32i_decode.h"
+
+/**
+ * @class rv32i_hart
+ * @brief Class representing a RISC-V hart (hardware thread).
+ *
+ * This class simulates a single RISC-V hart, including registers,
+ * PC, and execution logic. It inherits from rv32i_decode to handle
+ * instruction decoding.
+ ********************************************************************************/
 class rv32i_hart : public rv32i_decode {
 public:
+  /**
+   * @brief Constructs a new rv32i_hart object.
+   * @param m Reference to the memory object to be used by the hart.
+   ****************************************************************************/
   rv32i_hart(memory &m) : mem(m) {};
 
+  /**
+   * @brief Sets the flag to show instructions during execution.
+   * @param b true to show instructions, false otherwise.
+   ****************************************************************************/
   void set_show_instructions(bool b) { show_insns = b; };
+
+  /**
+   * @brief Sets the flag to show registers during execution.
+   * @param b true to show registers, false otherwise.
+   ****************************************************************************/
   void set_show_registers(bool b) { show_regs = b; };
 
+  /**
+   * @brief Checks if the hart is halted.
+   * @return true if halted, false otherwise.
+   ****************************************************************************/
   bool is_halted() const { return halt; };
+
+  /**
+   * @brief Gets the reason for the halt.
+   * @return The string description of the halt reason.
+   ****************************************************************************/
   const std ::string &get_halt_reason() const { return halt_reason; };
 
+  /**
+   * @brief Gets the number of instructions executed.
+   * @return The instruction count.
+   ****************************************************************************/
   uint64_t get_insn_counter() const { return insn_counter; };
+
+  /**
+   * @brief Sets the hart ID (mhartid CSR).
+   * @param i The hart ID.
+   ****************************************************************************/
   void set_mhartid(int i) { mhartid = i; }
 
+  /**
+   * @brief Executes a single instruction cycle.
+   * @param hdr Optional header string for output.
+   ****************************************************************************/
   void tick(const std::string &hdr = "");
+
+  /**
+   * @brief Dumps the current state of the hart (registers and memory).
+   * @param hdr Optional header string for output.
+   ****************************************************************************/
   void dump(const std::string &hdr = "") const;
+
+  /**
+   * @brief Resets the hart's state.
+   ****************************************************************************/
   void reset();
 
 protected:
