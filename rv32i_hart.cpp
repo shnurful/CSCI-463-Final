@@ -292,7 +292,7 @@ void rv32i_hart::tick(const string &hdr) {
 
   if (show_regs) {
     regs.dump();
-    std::cout << "\npc " << to_hex32(pc);
+    std::cout << "\n pc " << to_hex32(pc);
   }
 
   int32_t pc_check = pc % 4;
@@ -307,7 +307,7 @@ void rv32i_hart::tick(const string &hdr) {
 
   if (show_insns) {
     std::cout << '\n'
-              << hdr << to_hex32(pc) << ": " << to_hex0x32(insn) << "  ";
+              << hdr << to_hex32(pc) << ": " << to_hex32(insn) << "  ";
     exec(insn, &std::cout);
   } else
     exec(insn, nullptr);
@@ -569,7 +569,7 @@ ALU_SHIFT_IMM(srai, >>, int32_t)
 #undef ALU_SLT_IMM
 #undef ALU_SHIFT_IMM
 
-#define LOAD_OP(NAME, MEM_FUNC, LOG_OP)                                        \
+#define LOAD_OP(NAME, MEM_FUNC, LOG_OP, WIDTH)                                 \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
     uint32_t rs1 = get_rs1(insn);                                              \
@@ -581,8 +581,7 @@ ALU_SHIFT_IMM(srai, >>, int32_t)
       *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
            << s;                                                               \
       *pos << "// " << render_reg(rd) << " = " LOG_OP "(m" << std::dec         \
-           << (sizeof(val) *                                                   \
-               8) /* Approximate bit width logic or hardcode strings */        \
+           << WIDTH                                                            \
            << "(" << to_hex0x32(regs.get(rs1)) << " + " << to_hex0x32(imm_i)   \
            << ")) = " << to_hex0x32(val);                                      \
     }                                                                          \
@@ -590,11 +589,11 @@ ALU_SHIFT_IMM(srai, >>, int32_t)
     pc += 4;                                                                   \
   }
 
-LOAD_OP(lb, get8_sx, "sx");
-LOAD_OP(lh, get16_sx, "sx");
-LOAD_OP(lw, get32_sx, "sx");
-LOAD_OP(lbu, get8, "zx");
-LOAD_OP(lhu, get16, "zx");
+LOAD_OP(lb, get8_sx, "sx", 8);
+LOAD_OP(lh, get16_sx, "sx", 16);
+LOAD_OP(lw, get32_sx, "sx", 32);
+LOAD_OP(lbu, get8, "zx", 8);
+LOAD_OP(lhu, get16, "zx", 16);
 
 #undef LOAD_OP
 

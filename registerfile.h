@@ -15,7 +15,7 @@ public:
   void dump(const string &hdr="") const;
 
 private:
-  vector<int32_t> regs = vector<int32_t>(33,0xf0f0f0f0);
+  vector<int32_t> regs = vector<int32_t>(32,0xf0f0f0f0);
   
 };
 

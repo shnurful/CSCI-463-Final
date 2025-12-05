@@ -18,7 +18,7 @@ void registerfile::set(uint32_t r, int32_t val) { regs[r] = val; }
 
 void registerfile::dump(const string &hdr) const {
   for (uint32_t reg = 0; reg < regs.size(); reg += 8) {
-    std::cout << '\n' << hdr << " x" << reg;
+    std::cout << '\n' << hdr << std::setw(3) << std::right << "x" << reg;
 
     for (uint32_t i = 0; i < 8 && (reg + i) < regs.size(); i++) {
       if (i == 4)
