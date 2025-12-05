@@ -28,9 +28,9 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
 
   case opcode_system: {
     if (insn == insn_ecall)
-      exec_ecall(insn, pos);
+      exec_ecall(pos);
     else if (insn == insn_ebreak)
-      exec_ebreak(insn, pos);
+      exec_ebreak(pos);
     else
       switch (get_funct3(insn)) {
       case funct3_csrrw: {
@@ -58,7 +58,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
         return;
       }
       default: {
-        exec_illegal_insn(insn, pos);
+        exec_illegal_insn(pos);
         return;
       }
         assert(0 && "unrecognized funct3 system");
@@ -70,11 +70,13 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
     switch (get_funct3(insn)) {
     case funct3_add: {
       uint32_t f7 = get_funct7(insn);
-      if (f7 == funct7_add)
+      if (f7 == funct7_add) {
         exec_add(insn, pos);
-      else if (f7 == funct7_sub)
+        return;
+      } else if (f7 == funct7_sub) {
         exec_sub(insn, pos);
-      else
+        return;
+      } else
         assert(0 && "unrecognized funct7");
     }
     case funct3_and: {
@@ -109,7 +111,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
         exec_srl(insn, pos);
         return;
       } else {
-        exec_illegal_insn(insn, pos);
+        exec_illegal_insn(pos);
         return;
       }
       assert(0 && "unrecognized funct7");
@@ -119,7 +121,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
       return;
     }
     default: {
-      exec_illegal_insn(insn, pos);
+      exec_illegal_insn(pos);
       return;
     }
       assert(0 && "unrecognized funct3 srx");
@@ -161,7 +163,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
         exec_srli(insn, pos);
         return;
       } else {
-        exec_illegal_insn(insn, pos);
+        exec_illegal_insn(pos);
         return;
       }
       assert(0 && "unrecognized funct7 alu_srx");
@@ -171,7 +173,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
       return;
     }
     default: {
-      exec_illegal_insn(insn, pos);
+      exec_illegal_insn(pos);
       return;
     }
       assert(0 && "unrecognized funct3 alu_srx");
@@ -202,7 +204,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
       return;
     }
     default: {
-      exec_illegal_insn(insn, pos);
+      exec_illegal_insn(pos);
       return;
     }
       assert(0 && "unrecognized funct3");
@@ -236,7 +238,7 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
       return;
     }
     default:
-      exec_illegal_insn(insn, pos);
+      exec_illegal_insn(pos);
       return;
       assert(0 && "unrecognized funct3");
     }
@@ -257,21 +259,21 @@ void rv32i_hart::exec(uint32_t insn, std::ostream *pos) {
       return;
     }
     default:
-      exec_illegal_insn(insn, pos);
+      exec_illegal_insn(pos);
       return;
       assert(0 && "unrecognized funct3 stype");
     }
     assert(0 && "stype fucked");
   }
   default: {
-    exec_illegal_insn(insn, pos);
+    exec_illegal_insn(pos);
     return;
   }
   }
   assert(0 && "you fucked up. oopsies!");
 }
 
-void rv32i_hart::exec_illegal_insn(uint32_t insn, std::ostream *pos) {
+void rv32i_hart::exec_illegal_insn(std::ostream *pos) {
   if (pos)
     *pos << render_illegal_insn();
   halt = true;
@@ -284,6 +286,7 @@ void rv32i_hart::tick(const string &hdr) {
 
   if (show_regs) {
     regs.dump();
+    std::cout << "\npc " << to_hex32(pc) ;
   }
 
   int32_t pc_check = pc % 4;
@@ -297,7 +300,7 @@ void rv32i_hart::tick(const string &hdr) {
   int32_t insn = mem.get32(pc);
 
   if (show_insns) {
-    std::cout << hdr << " " << to_hex0x32(pc) << " ";
+    std::cout << '\n' << hdr << to_hex32(pc) << ": ";
     exec(insn, &std::cout);
   } else
     exec(insn, nullptr);
@@ -321,16 +324,17 @@ void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
 void rv32i_hart::exec_auipc(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t imm_u = get_imm_u(insn);
+  *pos << to_hex0x20(imm_u);
 
   if (pos) {
     string s = render_auipc(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc) << " + "
          << to_hex0x32(imm_u) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(4) << ")";
+         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(imm_u) << ")";
   }
 
-  regs.set(rd, (imm_u + pc));
+  regs.set(rd, (pc + imm_u));
   pc += 4;
 }
 
@@ -345,7 +349,7 @@ void rv32i_hart::exec_jal(uint32_t insn, std::ostream *pos) {
          << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(imm_j) << ")";
   }
 
-  regs.set(rd, (pc + 4));
+  regs.set(rd, (pc + 0x4));
   pc = pc + imm_j;
 }
 
@@ -358,7 +362,7 @@ void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
     string s = render_jalr(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(4) << ") & "
+         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(imm_i) << ") & "
          << to_hex0x32(0xfffffffe) << " = " << to_hex0x32(0);
   }
 
@@ -366,114 +370,276 @@ void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
   pc = r1 + imm_i;
 }
 
-void rv32i_hart::exec_ebreak(uint32_t insn, std::ostream *pos){
-  
-  if(pos){
+void rv32i_hart::exec_ebreak(std::ostream *pos) {
+
+  if (pos) {
     string s = render_ebreak();
-    *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s; 
+    *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// HALT";
   }
   halt = true;
   halt_reason = "EBREAK instruction";
-
 }
-void rv32i_hart::exec_ecall(uint32_t insn, std::ostream *pos){
-  
-  if(pos){
+void rv32i_hart::exec_ecall(std::ostream *pos) {
+
+  if (pos) {
     string s = render_ecall();
-    *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s; 
+    *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// HALT";
   }
   halt = true;
   halt_reason = "ECALL instruction";
-
 }
-#define CSR_OP(NAME, SOURCE, CALC_NEW) \
-void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) { \
-    uint32_t rd = get_rd(insn); \
-    uint32_t rs1 = get_rs1(insn); \
-    uint32_t csr_addr = get_imm_i(insn); \
-    uint32_t source = SOURCE; \
-    \
-    uint32_t old_csr_val = 0; \
-    if (csr_addr == 0xf14) { \
-        old_csr_val = mhartid; \
-    } else { \
-      halt = true;\
-      halt_reason = "Illegal CSR in CSRRS instruction";\
-    } \
-    \
-    uint32_t new_csr_val = CALC_NEW; \
-    \
-    if (csr_addr == 0xf14) { \
-    } \
-    \
-    if (pos) { \
-        std::string s = render_csrrx(insn, #NAME); \
-        *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s; \
-        *pos << "// " << render_reg(rd) << " = " << to_hex0x32(old_csr_val); \
-    } \
-    regs.set(rd, old_csr_val); \
-    pc += 4; \
-}
-CSR_OP(csrrw, regs.get(rs1), source)
-CSR_OP(csrrs, regs.get(rs1), old_csr_val | source)
-CSR_OP(csrrc, regs.get(rs1), old_csr_val & ~source)
 
-CSR_OP(csrrwi, rs1, source)
-CSR_OP(csrrsi, rs1, old_csr_val | source)
-CSR_OP(csrrci, rs1, old_csr_val & ~source)
+#define CSR_OP(NAME)                                                           \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t csr_addr = get_imm_i(insn);                                       \
+                                                                               \
+    uint32_t old_csr_val = 0;                                                  \
+    if (csr_addr == 0xf14) {                                                   \
+      old_csr_val = mhartid;                                                   \
+    } else {                                                                   \
+      halt = true;                                                             \
+      halt_reason = "Illegal CSR in CSRRS instruction";                        \
+    }                                                                          \
+                                                                               \
+    if (csr_addr == 0xf14) {                                                   \
+    }                                                                          \
+                                                                               \
+    if (pos) {                                                                 \
+      std::string s = render_csrrx(insn, #NAME);                               \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = " << to_hex0x32(old_csr_val);     \
+    }                                                                          \
+    regs.set(rd, old_csr_val);                                                 \
+    pc += 4;                                                                   \
+  }
+
+CSR_OP(csrrw)
+CSR_OP(csrrs)
+CSR_OP(csrrc)
+
+CSR_OP(csrrwi)
+CSR_OP(csrrsi)
+CSR_OP(csrrci)
 
 #undef CSR_OP
 
+#define R_TYPE_ALU(NAME, OP, TYPE, MNEMONIC)                                   \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    uint32_t rs2 = get_rs2(insn);                                              \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    TYPE val2 = (TYPE)regs.get(rs2);                                           \
+    int32_t result = (int32_t)(val1 OP val2);                                  \
+    if (pos) {                                                                 \
+      std::string s = render_rtype(insn, MNEMONIC);                            \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = " << to_hex0x32(val1)             \
+           << " " #OP " " << to_hex0x32(val2) << " = " << to_hex0x32(result);  \
+    }                                                                          \
+    regs.set(rd, result);                                                      \
+    pc += 4;                                                                   \
+  }
 
-#define R_TYPE_ALU(NAME, OP, TYPE, MNEMONIC) \
-void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) { \
-    uint32_t rd = get_rd(insn); \
-    uint32_t rs1 = get_rs1(insn); \
-    uint32_t rs2 = get_rs2(insn); \
-    TYPE val1 = (TYPE)regs.get(rs1); \
-    TYPE val2 = (TYPE)regs.get(rs2); \
-    int32_t result = (int32_t)(val1 OP val2); \
-    if (pos) { \
-        std::string s = render_rtype(insn, MNEMONIC); \
-        *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s; \
-        *pos << "// " << render_reg(rd) << " = " << to_hex0x32(val1) << " " #OP " " << to_hex0x32(val2) << " = " << to_hex0x32(result); \
-    } \
-    regs.set(rd, result); \
-    pc += 4; \
-}
-
-#define R_TYPE_SHIFT(NAME, OP, TYPE, MNEMONIC) \
-void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) { \
-    uint32_t rd = get_rd(insn); \
-    uint32_t rs1 = get_rs1(insn); \
-    uint32_t rs2 = get_rs2(insn); \
-    TYPE val1 = (TYPE)regs.get(rs1); \
-    uint32_t amount = regs.get(rs2) & 0x1f;\
-    int32_t result = (int32_t)(val1 OP amount); \
-    if (pos) { \
-        std::string s = render_rtype(insn, MNEMONIC); \
-        *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s; \
-        *pos << "// " << render_reg(rd) << " = " << to_hex0x32(val1) << " " #OP " " << std::dec << amount << " = " << to_hex0x32(result); \
-    } \
-    regs.set(rd, result); \
-    pc += 4; \
-}
-
+#define R_TYPE_SHIFT(NAME, OP, TYPE, MNEMONIC)                                 \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    uint32_t rs2 = get_rs2(insn);                                              \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    uint32_t amount = regs.get(rs2) & 0x1f;                                    \
+    int32_t result = (int32_t)(val1 OP amount);                                \
+    if (pos) {                                                                 \
+      std::string s = render_rtype(insn, MNEMONIC);                            \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = " << to_hex0x32(val1)             \
+           << " " #OP " " << std::dec << amount << " = "                       \
+           << to_hex0x32(result);                                              \
+    }                                                                          \
+    regs.set(rd, result);                                                      \
+    pc += 4;                                                                   \
+  }
 
 R_TYPE_ALU(add, +, int32_t, "add")
 R_TYPE_ALU(sub, -, int32_t, "sub")
 R_TYPE_ALU(and, &, int32_t, "and")
-R_TYPE_ALU(or,  |, int32_t, "or")
+R_TYPE_ALU(or, |, int32_t, "or")
 R_TYPE_ALU(xor, ^, int32_t, "xor")
 
-R_TYPE_ALU(slt,  <, int32_t,  "slt") 
+R_TYPE_ALU(slt, <, int32_t, "slt")
 R_TYPE_ALU(sltu, <, uint32_t, "sltu")
 
 R_TYPE_SHIFT(sll, <<, uint32_t, "sll")
 R_TYPE_SHIFT(srl, >>, uint32_t, "srl")
-R_TYPE_SHIFT(sra, >>, int32_t,  "sra")
+R_TYPE_SHIFT(sra, >>, int32_t, "sra")
 
 #undef R_TYPE_ALU
 #undef R_TYPE_SHIFT
+
+#define ALU_IMM(NAME, OP, TYPE)                                                \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    int32_t imm_i = get_imm_i(insn);                                           \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    TYPE val2 = (TYPE)imm_i;                                                   \
+    int32_t result = (int32_t)(val1 OP val2);                                  \
+    if (pos) {                                                                 \
+      std::string s = render_itype_alu(insn, #NAME, imm_i);                    \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = " << to_hex0x32(val1)             \
+           << " " #OP " " << to_hex0x32(val2) << " = " << to_hex0x32(result);  \
+    }                                                                          \
+    regs.set(rd, result);                                                      \
+    pc += 4;                                                                   \
+  }
+
+#define ALU_SLT_IMM(NAME, OP, TYPE, LOG_OP)                                    \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    int32_t imm_i = get_imm_i(insn);                                           \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    TYPE val2 = (TYPE)imm_i;                                                   \
+    int32_t result = (val1 OP val2) ? 1 : 0;                                   \
+    if (pos) {                                                                 \
+      std::string s = render_itype_alu(insn, #NAME, imm_i);                    \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = (" << to_hex0x32(val1)            \
+           << " " LOG_OP " " << std::dec << val2                               \
+           << ") ? 1 : 0 = " << to_hex0x32(result);                            \
+    }                                                                          \
+    regs.set(rd, result);                                                      \
+    pc += 4;                                                                   \
+  }
+
+#define ALU_SHIFT_IMM(NAME, OP, TYPE)                                          \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    int32_t imm_i = get_imm_i(insn);                                           \
+    uint32_t shamt = imm_i & 0x1f;                                             \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    int32_t result = (int32_t)(val1 OP shamt);                                 \
+    if (pos) {                                                                 \
+      std::string s = render_itype_alu(insn, #NAME, shamt);                    \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = " << to_hex0x32(val1)             \
+           << " " #OP " " << std::dec << shamt << " = " << to_hex0x32(result); \
+    }                                                                          \
+    regs.set(rd, result);                                                      \
+    pc += 4;                                                                   \
+  }
+
+ALU_IMM(addi, +, int32_t)
+ALU_IMM(andi, &, int32_t)
+ALU_IMM(ori, |, int32_t)
+ALU_IMM(xori, ^, int32_t)
+
+ALU_SLT_IMM(slti, <, int32_t, "<")
+ALU_SLT_IMM(sltiu, <, uint32_t, "<U")
+
+ALU_SHIFT_IMM(slli, <<, uint32_t)
+ALU_SHIFT_IMM(srli, >>, uint32_t)
+ALU_SHIFT_IMM(srai, >>, int32_t)
+
+#undef ALU_IMM
+#undef ALU_SLT_IMM
+#undef ALU_SHIFT_IMM
+
+#define LOAD_OP(NAME, MEM_FUNC, LOG_OP)                                        \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rd = get_rd(insn);                                                \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    int32_t imm_i = get_imm_i(insn);                                           \
+    uint32_t addr = regs.get(rs1) + imm_i;                                     \
+    int32_t val = mem.MEM_FUNC(addr);                                          \
+    if (pos) {                                                                 \
+      std::string s = render_itype_load(insn, #NAME);                          \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// " << render_reg(rd) << " = " LOG_OP "(m" << std::dec         \
+           << (sizeof(val) *                                                   \
+               8) /* Approximate bit width logic or hardcode strings */        \
+           << "(" << to_hex0x32(regs.get(rs1)) << " + " << to_hex0x32(imm_i)   \
+           << ")) = " << to_hex0x32(val);                                      \
+    }                                                                          \
+    regs.set(rd, val);                                                         \
+    pc += 4;                                                                   \
+  }
+
+LOAD_OP(lb, get8_sx, "sx");
+LOAD_OP(lh, get16_sx, "sx");
+LOAD_OP(lw, get32_sx, "sx");
+LOAD_OP(lbu, get8, "zx");
+LOAD_OP(lhu, get16, "zx");
+
+#undef LOAD_OP
+
+#define B_TYPE_IMPL(NAME, OP, TYPE, MNEMONIC, LOG_OP)                          \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    uint32_t rs2 = get_rs2(insn);                                              \
+    int32_t imm_b = get_imm_b(insn);                                           \
+    TYPE val1 = (TYPE)regs.get(rs1);                                           \
+    TYPE val2 = (TYPE)regs.get(rs2);                                           \
+    bool take = (val1 OP val2);                                                \
+    int32_t offset = take ? imm_b : 4;                                         \
+    if (pos) {                                                                 \
+      std::string s = render_btype(pc, insn, MNEMONIC);                        \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      *pos << "// pc += (" << to_hex0x32(val1) << " " LOG_OP " "               \
+           << to_hex0x32(val2) << " ? " << to_hex0x32(imm_b)                   \
+           << " : 4) = " << to_hex0x32(pc + offset);                           \
+    }                                                                          \
+    pc += offset;                                                              \
+  }
+
+B_TYPE_IMPL(beq, ==, int32_t, "beq", "==")
+B_TYPE_IMPL(bne, !=, int32_t, "bne", "!=")
+B_TYPE_IMPL(blt, <, int32_t, "blt", "<")
+B_TYPE_IMPL(bge, >=, int32_t, "bge", ">=")
+
+B_TYPE_IMPL(bltu, <, uint32_t, "bltu", "<U")
+B_TYPE_IMPL(bgeu, >=, uint32_t, "bgeu", ">=U")
+
+#undef B_TYPE_IMPL
+
+#define STORE_OP(NAME, MEM_FUNC, M_TYPE)                                       \
+  void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
+    uint32_t rs1 = get_rs1(insn);                                              \
+    uint32_t rs2 = get_rs2(insn);                                              \
+    int32_t imm_s = get_imm_s(insn);                                           \
+    uint32_t addr = regs.get(rs1) + imm_s;                                     \
+    mem.MEM_FUNC(addr, regs.get(rs2));                                         \
+    if (pos) {                                                                 \
+      std::string s = render_stype(insn, #NAME);                               \
+      *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
+           << s;                                                               \
+      uint32_t val = regs.get(rs2);                                            \
+      if (std::string(#NAME) == "sb")                                          \
+        val &= 0xff;                                                           \
+      else if (std::string(#NAME) == "sh")                                     \
+        val &= 0xffff;                                                         \
+      *pos << "// " M_TYPE "(" << to_hex0x32(regs.get(rs1)) << " + "           \
+           << to_hex0x32(imm_s) << ") = " << to_hex0x32(val);                  \
+    }                                                                          \
+    pc += 4;                                                                   \
+  }
+
+// Generate the functions
+STORE_OP(sb, set8, "m8")
+STORE_OP(sh, set16, "m16")
+STORE_OP(sw, set32, "m32")
+
+#undef STORE_OP

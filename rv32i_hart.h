@@ -1,3 +1,4 @@
+#pragma once
 #include "memory.h"
 #include "registerfile.h"
 #include "rv32i_decode.h"
@@ -18,12 +19,16 @@ public:
   void dump(const std::string &hdr = "") const;
   void reset();
 
+protected:
+  registerfile regs;
+  memory &mem;
+
 private:
   static constexpr int instruction_width = 35;
   void exec(uint32_t insn, std::ostream *);
 
   // misc
-  void exec_illegal_insn(uint32_t insn, std::ostream *);
+  void exec_illegal_insn(std::ostream *);
   void exec_lui(uint32_t insn, std::ostream *);
   void exec_auipc(uint32_t insn, std::ostream *);
 
@@ -57,7 +62,7 @@ private:
   // opcode load_imm
   void exec_lb(uint32_t insn, std::ostream *);
   void exec_lh(uint32_t insn, std::ostream *);
-  void exec_lw(uint32_t insn, std::ostream *); 
+  void exec_lw(uint32_t insn, std::ostream *);
   void exec_lbu(uint32_t insn, std::ostream *);
   void exec_lhu(uint32_t insn, std::ostream *);
 
@@ -75,8 +80,8 @@ private:
   void exec_sw(uint32_t insn, std::ostream *);
 
   // opcode system
-  void exec_ecall(uint32_t insn, std::ostream *);
-  void exec_ebreak(uint32_t insn, std::ostream *);
+  void exec_ecall(std::ostream *);
+  void exec_ebreak(std::ostream *);
   void exec_csrrw(uint32_t insn, std::ostream *);
   void exec_csrrs(uint32_t insn, std::ostream *);
   void exec_csrrc(uint32_t insn, std::ostream *);
@@ -87,14 +92,10 @@ private:
   bool halt = {false};
   std::string halt_reason = {" none "};
 
-  uint64_t insn_counter = {0};
-  uint32_t pc = {0};
-  uint32_t mhartid = {0};
+  uint64_t insn_counter = {0x0};
+  uint32_t pc = {0x0};
+  uint32_t mhartid = {0x0};
 
   bool show_regs = {false};
   bool show_insns = {false};
-
-protected:
-  registerfile regs;
-  memory &mem;
 };

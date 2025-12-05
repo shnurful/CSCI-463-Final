@@ -8,18 +8,19 @@
 #include "hex.h"
 #include "memory.h"
 #include "rv32i_decode.h"
+#include "cpu_single_hart.h"
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <unistd.h>
 
 struct opts_list {
-  bool dump_dsasmbl = false;
-  bool show_insn = false;
-  uint32_t exec_limit = 0x0;
-  uint32_t memory_limit = 0x100;
-  bool dump_hart_pre = true;
-  bool dump_hart_post = true;
+  bool dump_dsasmbl = false;      //dump memory before execution
+  bool show_insn = false;         //show instructions during execution
+  uint64_t exec_limit = 0x0;      //max number of instructions to execute
+  uint32_t memory_limit = 0x100;  //size of memory
+  bool dump_on_exec = true;       //show regs and pc before each execution
+  bool dump_hart_post = true;     //show regs, pc, and memory after halt
 };
 
 static void usage() {
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
       break;
     }
     case 'r': {
-      opts.dump_hart_pre = true;
+      opts.dump_on_exec = true;
       break;
     }
     case 'z': {
@@ -92,6 +93,12 @@ int main(int argc, char **argv) {
     disassemble(mem);
     mem.dump();
   }
+ 
+  cpu_single_hart cpu(mem);
+  cpu.set_show_instructions(opts.show_insn);
+  cpu.set_show_registers(opts.dump_on_exec);
+  
+  cpu.run(opts.exec_limit);
 
   return 0;
 }
