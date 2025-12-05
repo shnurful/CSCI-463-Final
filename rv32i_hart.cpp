@@ -395,10 +395,9 @@ void rv32i_hart::exec_ecall(std::ostream *pos) {
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
     int32_t csr_addr = get_imm_i(insn);                                        \
-    csr_addr <<= 20;                                                            \
                                                                                \
         uint32_t old_csr_val = 0;                                              \
-    if (csr_addr == 0xf14) {                                                   \
+    if ((csr_addr & 0xfff) == 0xf14) {                                                   \
       old_csr_val = mhartid;                                                   \
     } else {                                                                   \
       halt = true;                                                             \
