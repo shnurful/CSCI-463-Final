@@ -286,7 +286,7 @@ void rv32i_hart::tick(const string &hdr) {
 
   if (show_regs) {
     regs.dump();
-    std::cout << "\npc " << to_hex32(pc) ;
+    std::cout << "\npc " << to_hex32(pc);
   }
 
   int32_t pc_check = pc % 4;
@@ -309,7 +309,7 @@ void rv32i_hart::tick(const string &hdr) {
 void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t imm_u = get_imm_u(insn);
-
+  imm_u <<= (0 + 12);
   if (pos) {
     string s = render_lui(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
@@ -324,8 +324,7 @@ void rv32i_hart::exec_lui(uint32_t insn, std::ostream *pos) {
 void rv32i_hart::exec_auipc(uint32_t insn, std::ostream *pos) {
   uint32_t rd = get_rd(insn);
   uint32_t imm_u = get_imm_u(insn);
-  *pos << to_hex0x20(imm_u);
-
+  imm_u <<= (0 + 12);
   if (pos) {
     string s = render_auipc(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
@@ -362,12 +361,13 @@ void rv32i_hart::exec_jalr(uint32_t insn, std::ostream *pos) {
     string s = render_jalr(insn);
     *pos << std::setw(instruction_width) << std::setfill(' ') << std::left << s;
     *pos << "// " << render_reg(rd) << " = " << to_hex0x32(pc + 4) << ", "
-         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(imm_i) << ") & "
-         << to_hex0x32(0xfffffffe) << " = " << to_hex0x32(0);
+         << "pc = (" << to_hex0x32(pc) << " + " << to_hex0x32(regs.get(r1))
+         << ") & " << to_hex0x32(0xfffffffe) << " = "
+         << to_hex0x32(imm_i + regs.get(r1));
   }
 
   regs.set(rd, (pc + 4));
-  pc = r1 + imm_i;
+  pc = regs.get(r1) + imm_i;
 }
 
 void rv32i_hart::exec_ebreak(std::ostream *pos) {
@@ -394,9 +394,10 @@ void rv32i_hart::exec_ecall(std::ostream *pos) {
 #define CSR_OP(NAME)                                                           \
   void rv32i_hart::exec_##NAME(uint32_t insn, std::ostream *pos) {             \
     uint32_t rd = get_rd(insn);                                                \
-    uint32_t csr_addr = get_imm_i(insn);                                       \
+    int32_t csr_addr = get_imm_i(insn);                                        \
+    csr_addr <<= 20;                                                            \
                                                                                \
-    uint32_t old_csr_val = 0;                                                  \
+        uint32_t old_csr_val = 0;                                              \
     if (csr_addr == 0xf14) {                                                   \
       old_csr_val = mhartid;                                                   \
     } else {                                                                   \
@@ -411,7 +412,7 @@ void rv32i_hart::exec_ecall(std::ostream *pos) {
       std::string s = render_csrrx(insn, #NAME);                               \
       *pos << std::setw(instruction_width) << std::setfill(' ') << std::left   \
            << s;                                                               \
-      *pos << "// " << render_reg(rd) << " = " << to_hex0x32(old_csr_val);     \
+      *pos << "// " << render_reg(rd) << " = " << old_csr_val;                 \
     }                                                                          \
     regs.set(rd, old_csr_val);                                                 \
     pc += 4;                                                                   \

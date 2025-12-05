@@ -338,7 +338,7 @@ string rv32i_decode::render_csrrx(uint32_t insn, const char *m) {
   ostringstream os;
   uint32_t rd = get_rd(insn);
   uint32_t r1 = get_rs1(insn);
-  uint32_t csr = get_imm_i(insn);
+  int32_t csr = get_imm_i(insn);
 
   os << render_mnemonic(m) << render_reg(rd) << "," << to_hex0x12(csr) << ","
      << render_reg(r1);
