@@ -1,6 +1,6 @@
 /* Ethan Silo
     z1838047
-    CSCI 340-PE1
+    CSCI 463-PE1
     
     I certify that this is my own work and where appropriate an extension 
     of the starter code provided for the assignment.
